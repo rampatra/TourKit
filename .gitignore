@@ -6,3 +6,32 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+
+# Xcode / SwiftPM
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+*.swiftpm/
+Package.resolved
+
+# Apple platform artifacts
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.mobileprovision
+*.orig
+.AppleDouble
+.LSOverride
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Cursor
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
