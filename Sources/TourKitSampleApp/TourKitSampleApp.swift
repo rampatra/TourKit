@@ -62,6 +62,7 @@ final class SampleAppDelegate: NSObject, NSApplicationDelegate {
     private let tour = TourKitWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
         tour.present(
             pages: SampleTour.pages,
             continueButtonTitle: "Continue",

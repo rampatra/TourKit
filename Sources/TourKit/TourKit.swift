@@ -87,30 +87,26 @@ public struct TourSlideshowView: View {
     // MARK: - Image section (top ~55%)
 
     private var imageSection: some View {
-        VStack(spacing: 0) {
-            ZStack(alignment: .top) {
-                image(for: pages[currentIndex])
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .overlay(alignment: .bottom) {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: 0),
-                                .init(color: Color(white: 0.10).opacity(0.5), location: 0.55),
-                                .init(color: Color(white: 0.10), location: 1.0)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 140)
-                        .allowsHitTesting(false)
-                    }
+        ZStack(alignment: .top) {
+            image(for: pages[currentIndex])
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .bottom) {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: Color(white: 0.10).opacity(0.5), location: 0.55),
+                            .init(color: Color(white: 0.10), location: 1.0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 140)
+                    .allowsHitTesting(false)
+                }
 
-                topControls
-            }
-
-            Spacer(minLength: 0)
+            topControls
         }
     }
 
@@ -342,7 +338,7 @@ public final class TourKitWindowController {
     @discardableResult
     public func present(
         pages: [TourPage],
-        size: CGSize = CGSize(width: 660, height: 640),
+        width: CGFloat = 660,
         continueButtonTitle: String = "Continue",
         finishButtonTitle: String = "Done",
         onFinish: (() -> Void)? = nil,
@@ -375,13 +371,21 @@ public final class TourKitWindowController {
                 dismiss()
             }
         )
-        .frame(width: size.width, height: size.height)
+        .frame(width: width)
 
         let hosting = NSHostingView(rootView: rootView)
-        hosting.frame = NSRect(origin: .zero, size: size)
+        if #available(macOS 13.0, *) {
+            hosting.sizingOptions = [.intrinsicContentSize]
+        }
+        hosting.layoutSubtreeIfNeeded()
+        let contentSize = CGSize(
+            width: width,
+            height: max(hosting.fittingSize.height, 1)
+        )
+        hosting.frame = NSRect(origin: .zero, size: contentSize)
 
         let window = HostWindow(
-            contentRect: NSRect(origin: .zero, size: size),
+            contentRect: NSRect(origin: .zero, size: contentSize),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -392,6 +396,7 @@ public final class TourKitWindowController {
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.level = .floating
+        window.collectionBehavior = [.managed, .participatesInCycle, .fullScreenAuxiliary]
         window.contentView = hosting
         window.center()
 
