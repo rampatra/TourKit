@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
 
 public struct TourPage: Identifiable, Hashable, Sendable {
     public let id: UUID
@@ -27,6 +32,8 @@ public struct TourSlideshowView: View {
     private let continueButtonTitle: String
     private let finishButtonTitle: String
     private let onFinish: (() -> Void)?
+    private let onClose: (() -> Void)?
+    @Environment(\.dismiss) private var dismiss
     @State private var currentIndex: Int
 
     public init(
@@ -34,12 +41,14 @@ public struct TourSlideshowView: View {
         initialPageIndex: Int = 0,
         continueButtonTitle: String = "Continue",
         finishButtonTitle: String = "Done",
-        onFinish: (() -> Void)? = nil
+        onFinish: (() -> Void)? = nil,
+        onClose: (() -> Void)? = nil
     ) {
         self.pages = pages
         self.continueButtonTitle = continueButtonTitle
         self.finishButtonTitle = finishButtonTitle
         self.onFinish = onFinish
+        self.onClose = onClose
         _currentIndex = State(initialValue: Self.clamped(initialPageIndex, pageCount: pages.count))
     }
 
@@ -48,19 +57,19 @@ public struct TourSlideshowView: View {
             if pages.isEmpty {
                 emptyState
             } else {
-                VStack(spacing: 22) {
-                    pageCarousel
-                    pageDescription
-                    controls
+                VStack(spacing: 0) {
+                    imageSection
+                    bottomPanel
                 }
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(.ultraThinMaterial)
+                .background(Color(white: 0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
                 )
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: currentIndex)
+        .animation(.easeInOut(duration: 0.25), value: currentIndex)
     }
 
     private var emptyState: some View {
@@ -75,47 +84,134 @@ public struct TourSlideshowView: View {
         .frame(maxWidth: .infinity, minHeight: 220)
     }
 
-    private var pageCarousel: some View {
-        image(for: pages[currentIndex])
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 620, minHeight: 220, maxHeight: 360)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .padding(.horizontal, 6)
-        .frame(maxWidth: .infinity, minHeight: 240, maxHeight: 380)
+    // MARK: - Image section (top ~55%)
+
+    private var imageSection: some View {
+        ZStack(alignment: .top) {
+            image(for: pages[currentIndex])
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .clipped()
+                .overlay(alignment: .bottom) {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: Color(white: 0.10).opacity(0.5), location: 0.55),
+                            .init(color: Color(white: 0.10), location: 1.0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 160)
+                    .allowsHitTesting(false)
+                }
+
+            topControls
+        }
     }
 
-    private var pageDescription: some View {
+    // MARK: - Bottom panel (dark area with text + button)
+
+    private var bottomPanel: some View {
         let currentPage = pages[currentIndex]
 
-        return VStack(spacing: 10) {
+        return VStack(spacing: 12) {
             PageIndicator(totalPages: pages.count, currentIndex: currentIndex)
+                .padding(.bottom, 4)
+
             Text(currentPage.title)
-                .font(.title2.weight(.semibold))
+                .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
+
             Text(currentPage.description)
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.white.opacity(0.70))
                 .fixedSize(horizontal: false, vertical: true)
+
+            primaryActionButton
+                .padding(.top, 6)
         }
-        .frame(maxWidth: 560)
+        .padding(.horizontal, 32)
+        .padding(.top, 6)
+        .padding(.bottom, 24)
     }
 
-    private var controls: some View {
-        HStack(spacing: 10) {
-            if currentIndex > 0 {
-                Button("Back") { goBack() }
-                    .buttonStyle(.bordered)
-            }
+    // MARK: - Top controls (back / close overlaying the image)
 
-            Button(isLastPage ? finishButtonTitle : continueButtonTitle) {
-                advance()
+    private var topControls: some View {
+        HStack {
+            iconButton(systemName: "chevron.left") {
+                goBack()
             }
-            .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.defaultAction)
+            .opacity(currentIndex > 0 ? 1 : 0)
+
+            Spacer()
+
+            iconButton(systemName: "checkmark") {
+                if let onClose {
+                    onClose()
+                } else {
+                    dismiss()
+                }
+            }
         }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+    }
+
+    // MARK: - Primary CTA
+
+    private var primaryActionButton: some View {
+        Button(action: advance) {
+            Text(isLastPage ? finishButtonTitle : continueButtonTitle)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 220, height: 42)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.10, green: 0.60, blue: 1.0),
+                                    Color(red: 0.04, green: 0.46, blue: 0.96)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                )
+                .clipShape(Capsule(style: .continuous))
+                .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    // MARK: - Icon button (glass circle)
+
+    private func iconButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.88))
+                .frame(width: 32, height: 32)
+                .background {
+                    if #available(macOS 26.0, iOS 26.0, *) {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .overlay {
+                                Circle().stroke(Color.white.opacity(0.25), lineWidth: 0.5)
+                            }
+                    } else {
+                        Circle().fill(Color.white.opacity(0.15))
+                    }
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var isLastPage: Bool {
@@ -129,7 +225,13 @@ public struct TourSlideshowView: View {
 
     private func advance() {
         if isLastPage {
-            onFinish?()
+            if let onFinish {
+                onFinish()
+            } else if let onClose {
+                onClose()
+            } else {
+                dismiss()
+            }
         } else {
             currentIndex += 1
         }
@@ -140,7 +242,74 @@ public struct TourSlideshowView: View {
     }
 
     private func image(for page: TourPage) -> Image {
-        Image(page.imageName, bundle: page.imageBundle)
+        if let bundle = page.imageBundle,
+           let image = platformImage(named: page.imageName, in: bundle) {
+            #if canImport(AppKit)
+            return Image(nsImage: image)
+            #elseif canImport(UIKit)
+            return Image(uiImage: image)
+            #else
+            return Image(page.imageName, bundle: page.imageBundle)
+            #endif
+        }
+
+        return Image(page.imageName, bundle: page.imageBundle)
+    }
+
+    #if canImport(AppKit)
+    private func platformImage(named name: String, in bundle: Bundle) -> NSImage? {
+        if let direct = bundle.image(forResource: name) {
+            return direct
+        }
+
+        let nsName = NSImage.Name((name as NSString).deletingPathExtension)
+        if let catalogImage = bundle.image(forResource: nsName) {
+            return catalogImage
+        }
+
+        return loadImageFromResourceFile(named: name, in: bundle)
+    }
+    #elseif canImport(UIKit)
+    private func platformImage(named name: String, in bundle: Bundle) -> UIImage? {
+        if let direct = UIImage(named: name, in: bundle, compatibleWith: nil) {
+            return direct
+        }
+
+        return loadImageFromResourceFile(named: name, in: bundle)
+    }
+    #endif
+
+    #if canImport(AppKit)
+    private func loadImageFromResourceFile(named name: String, in bundle: Bundle) -> NSImage? {
+        if let resourceURL = resourceURL(named: name, in: bundle) {
+            return NSImage(contentsOf: resourceURL)
+        }
+        return nil
+    }
+    #elseif canImport(UIKit)
+    private func loadImageFromResourceFile(named name: String, in bundle: Bundle) -> UIImage? {
+        guard let resourceURL = resourceURL(named: name, in: bundle),
+              let data = try? Data(contentsOf: resourceURL) else {
+            return nil
+        }
+        return UIImage(data: data)
+    }
+    #endif
+
+    private func resourceURL(named name: String, in bundle: Bundle) -> URL? {
+        let base = (name as NSString).deletingPathExtension
+        let ext = (name as NSString).pathExtension
+        if !ext.isEmpty, let url = bundle.url(forResource: base, withExtension: ext) {
+            return url
+        }
+
+        for candidateExt in ["png", "jpg", "jpeg", "heic", "tiff", "gif", "webp"] {
+            if let url = bundle.url(forResource: name, withExtension: candidateExt) {
+                return url
+            }
+        }
+
+        return nil
     }
 }
 
@@ -157,7 +326,7 @@ public struct PageIndicator: View {
         HStack(spacing: 7) {
             ForEach(0..<totalPages, id: \.self) { index in
                 Capsule(style: .continuous)
-                    .fill(index == currentIndex ? Color.primary.opacity(0.9) : Color.secondary.opacity(0.35))
+                    .fill(index == currentIndex ? Color.white.opacity(0.95) : Color.white.opacity(0.32))
                     .frame(width: index == currentIndex ? 24 : 8, height: 8)
             }
         }

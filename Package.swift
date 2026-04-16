@@ -14,10 +14,21 @@ let package = Package(
             name: "TourKit",
             targets: ["TourKit"]
         ),
+        .executable(
+            name: "TourKitSampleApp",
+            targets: ["TourKitSampleApp"]
+        ),
     ],
     targets: [
         .target(
             name: "TourKit"
+        ),
+        .executableTarget(
+            name: "TourKitSampleApp",
+            dependencies: ["TourKit"],
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "TourKitTests",
