@@ -25,11 +25,7 @@ Package.resolved
 .LSOverride
 
 # VS Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/launch.json
-!.vscode/tasks.json
+.vscode/
 
 # Cursor
 .cursor/*
