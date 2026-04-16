@@ -87,27 +87,30 @@ public struct TourSlideshowView: View {
     // MARK: - Image section (top ~55%)
 
     private var imageSection: some View {
-        ZStack(alignment: .top) {
-            image(for: pages[currentIndex])
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .clipped()
-                .overlay(alignment: .bottom) {
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: Color(white: 0.10).opacity(0.5), location: 0.55),
-                            .init(color: Color(white: 0.10), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 160)
-                    .allowsHitTesting(false)
-                }
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                image(for: pages[currentIndex])
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .overlay(alignment: .bottom) {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: Color(white: 0.10).opacity(0.5), location: 0.55),
+                                .init(color: Color(white: 0.10), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 140)
+                        .allowsHitTesting(false)
+                    }
 
-            topControls
+                topControls
+            }
+
+            Spacer(minLength: 0)
         }
     }
 
@@ -312,6 +315,115 @@ public struct TourSlideshowView: View {
         return nil
     }
 }
+
+#if canImport(AppKit)
+
+/// Presents a `TourSlideshowView` inside a transparent, card-sized, draggable macOS window.
+///
+/// The window has no title bar, no visible chrome, a transparent background, and is sized
+/// to match the tour card. It can be dragged around by its background and participates in
+/// Mission Control / App Exposé like a normal window.
+@MainActor
+public final class TourKitWindowController {
+    private final class HostWindow: NSWindow {
+        override var canBecomeKey: Bool { true }
+        override var canBecomeMain: Bool { true }
+    }
+
+    private var window: NSWindow?
+    private var windowDelegate: WindowDelegate?
+
+    public init() {}
+
+    /// Presents the tour window. If a window is already visible, it is brought to the front.
+    ///
+    /// The window automatically closes when the user taps the checkmark or finishes the tour.
+    /// `onClose` and `onFinish` are invoked *before* the window is dismissed.
+    @discardableResult
+    public func present(
+        pages: [TourPage],
+        size: CGSize = CGSize(width: 660, height: 640),
+        continueButtonTitle: String = "Continue",
+        finishButtonTitle: String = "Done",
+        onFinish: (() -> Void)? = nil,
+        onClose: (() -> Void)? = nil
+    ) -> NSWindow {
+        if let existing = window {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return existing
+        }
+
+        let dismiss: () -> Void = { [weak self] in
+            self?.close()
+        }
+
+        let rootView = TourSlideshowView(
+            pages: pages,
+            continueButtonTitle: continueButtonTitle,
+            finishButtonTitle: finishButtonTitle,
+            onFinish: {
+                if let onFinish {
+                    onFinish()
+                } else {
+                    onClose?()
+                }
+                dismiss()
+            },
+            onClose: {
+                onClose?()
+                dismiss()
+            }
+        )
+        .frame(width: size.width, height: size.height)
+
+        let hosting = NSHostingView(rootView: rootView)
+        hosting.frame = NSRect(origin: .zero, size: size)
+
+        let window = HostWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.borderless, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.isMovableByWindowBackground = true
+        window.isReleasedWhenClosed = false
+        window.level = .floating
+        window.contentView = hosting
+        window.center()
+
+        let delegate = WindowDelegate { [weak self] in
+            self?.window = nil
+            self?.windowDelegate = nil
+        }
+        window.delegate = delegate
+        self.windowDelegate = delegate
+
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        self.window = window
+        return window
+    }
+
+    /// Closes the tour window if it is currently presented.
+    public func close() {
+        window?.close()
+        window = nil
+        windowDelegate = nil
+    }
+
+    private final class WindowDelegate: NSObject, NSWindowDelegate {
+        let onClose: () -> Void
+        init(onClose: @escaping () -> Void) { self.onClose = onClose }
+        func windowWillClose(_ notification: Notification) { onClose() }
+    }
+}
+
+#endif
 
 public struct PageIndicator: View {
     private let totalPages: Int
