@@ -53,15 +53,15 @@ public struct TourPage: Identifiable, Hashable, @unchecked Sendable {
 }
 
 public struct TourSlideshowView: View {
-    private let pages: [TourPage]
-    private let continueButtonTitle: LocalizedStringKey
-    private let finishButtonTitle: LocalizedStringKey
-    private let buttonTableName: String?
-    private let buttonBundle: Bundle?
-    private let onFinish: (() -> Void)?
-    private let onClose: (() -> Void)?
+    let pages: [TourPage]
+    let continueButtonTitle: LocalizedStringKey
+    let finishButtonTitle: LocalizedStringKey
+    let buttonTableName: String?
+    let buttonBundle: Bundle?
+    let onFinish: (() -> Void)?
+    let onClose: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
-    @State private var currentIndex: Int
+    @State var currentIndex: Int
 
     public init(
         pages: [TourPage],
@@ -248,16 +248,16 @@ public struct TourSlideshowView: View {
         .buttonStyle(.plain)
     }
 
-    private var isLastPage: Bool {
+    var isLastPage: Bool {
         currentIndex == pages.count - 1
     }
 
-    private static func clamped(_ index: Int, pageCount: Int) -> Int {
+    static func clamped(_ index: Int, pageCount: Int) -> Int {
         guard pageCount > 0 else { return 0 }
         return max(0, min(index, pageCount - 1))
     }
 
-    private func advance() {
+    func advance() {
         if isLastPage {
             if let onFinish {
                 onFinish()
@@ -271,7 +271,7 @@ public struct TourSlideshowView: View {
         }
     }
 
-    private func goBack() {
+    func goBack() {
         currentIndex = max(0, currentIndex - 1)
     }
 
@@ -470,8 +470,8 @@ public final class TourKitWindowController {
 #endif
 
 public struct PageIndicator: View {
-    private let totalPages: Int
-    private let currentIndex: Int
+    let totalPages: Int
+    let currentIndex: Int
 
     public init(totalPages: Int, currentIndex: Int) {
         self.totalPages = totalPages
