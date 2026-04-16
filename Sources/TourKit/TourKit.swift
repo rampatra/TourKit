@@ -5,32 +5,59 @@ import AppKit
 import UIKit
 #endif
 
-public struct TourPage: Identifiable, Hashable, Sendable {
+public struct TourPage: Identifiable, Hashable, @unchecked Sendable {
     public let id: UUID
     public let imageName: String
     public let imageBundle: Bundle?
-    public let title: String
-    public let description: String
+    public let title: LocalizedStringKey
+    public let description: LocalizedStringKey
+    /// Optional `.strings` / `.xcstrings` table name used to look up `title` and
+    /// `description`. When `nil`, the default `Localizable` table is used.
+    public let tableName: String?
+    /// Bundle used to look up localized strings for `title` and `description`.
+    /// When `nil`, falls back to `imageBundle`, which is typically the caller's
+    /// module bundle (e.g. `.module`).
+    public let stringsBundle: Bundle?
 
     public init(
         id: UUID = UUID(),
         imageName: String,
         imageBundle: Bundle? = nil,
-        title: String,
-        description: String
+        title: LocalizedStringKey,
+        description: LocalizedStringKey,
+        tableName: String? = nil,
+        stringsBundle: Bundle? = nil
     ) {
         self.id = id
         self.imageName = imageName
         self.imageBundle = imageBundle
         self.title = title
         self.description = description
+        self.tableName = tableName
+        self.stringsBundle = stringsBundle
+    }
+
+    /// Bundle used for localized string lookup. Prefers `stringsBundle`, then
+    /// `imageBundle`, else `nil` (SwiftUI default).
+    var resolvedStringsBundle: Bundle? {
+        stringsBundle ?? imageBundle
+    }
+
+    public static func == (lhs: TourPage, rhs: TourPage) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
 public struct TourSlideshowView: View {
     private let pages: [TourPage]
-    private let continueButtonTitle: String
-    private let finishButtonTitle: String
+    private let continueButtonTitle: LocalizedStringKey
+    private let finishButtonTitle: LocalizedStringKey
+    private let buttonTableName: String?
+    private let buttonBundle: Bundle?
     private let onFinish: (() -> Void)?
     private let onClose: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
@@ -39,14 +66,18 @@ public struct TourSlideshowView: View {
     public init(
         pages: [TourPage],
         initialPageIndex: Int = 0,
-        continueButtonTitle: String = "Continue",
-        finishButtonTitle: String = "Done",
+        continueButtonTitle: LocalizedStringKey = "Continue",
+        finishButtonTitle: LocalizedStringKey = "Done",
+        buttonTableName: String? = nil,
+        buttonBundle: Bundle? = nil,
         onFinish: (() -> Void)? = nil,
         onClose: (() -> Void)? = nil
     ) {
         self.pages = pages
         self.continueButtonTitle = continueButtonTitle
         self.finishButtonTitle = finishButtonTitle
+        self.buttonTableName = buttonTableName
+        self.buttonBundle = buttonBundle
         self.onFinish = onFinish
         self.onClose = onClose
         _currentIndex = State(initialValue: Self.clamped(initialPageIndex, pageCount: pages.count))
@@ -119,12 +150,12 @@ public struct TourSlideshowView: View {
             PageIndicator(totalPages: pages.count, currentIndex: currentIndex)
                 .padding(.bottom, 4)
 
-            Text(currentPage.title)
+            Text(currentPage.title, tableName: currentPage.tableName, bundle: currentPage.resolvedStringsBundle)
                 .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
 
-            Text(currentPage.description)
+            Text(currentPage.description, tableName: currentPage.tableName, bundle: currentPage.resolvedStringsBundle)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.white.opacity(0.70))
@@ -165,7 +196,11 @@ public struct TourSlideshowView: View {
 
     private var primaryActionButton: some View {
         Button(action: advance) {
-            Text(isLastPage ? finishButtonTitle : continueButtonTitle)
+            Text(
+                isLastPage ? finishButtonTitle : continueButtonTitle,
+                tableName: buttonTableName,
+                bundle: buttonBundle
+            )
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 220, height: 42)
@@ -339,8 +374,10 @@ public final class TourKitWindowController {
     public func present(
         pages: [TourPage],
         width: CGFloat = 660,
-        continueButtonTitle: String = "Continue",
-        finishButtonTitle: String = "Done",
+        continueButtonTitle: LocalizedStringKey = "Continue",
+        finishButtonTitle: LocalizedStringKey = "Done",
+        buttonTableName: String? = nil,
+        buttonBundle: Bundle? = nil,
         onFinish: (() -> Void)? = nil,
         onClose: (() -> Void)? = nil
     ) -> NSWindow {
@@ -358,6 +395,8 @@ public final class TourKitWindowController {
             pages: pages,
             continueButtonTitle: continueButtonTitle,
             finishButtonTitle: finishButtonTitle,
+            buttonTableName: buttonTableName,
+            buttonBundle: buttonBundle,
             onFinish: {
                 if let onFinish {
                     onFinish()

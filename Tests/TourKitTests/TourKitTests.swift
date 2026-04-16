@@ -1,3 +1,4 @@
+import SwiftUI
 import Testing
 @testable import TourKit
 
@@ -9,8 +10,8 @@ import Testing
     )
 
     #expect(page.imageName == "feature-search")
-    #expect(page.title == "All New Spotlight Search")
-    #expect(page.description == "Find what you need instantly.")
+    #expect(page.title == LocalizedStringKey("All New Spotlight Search"))
+    #expect(page.description == LocalizedStringKey("Find what you need instantly."))
 }
 
 @Test @MainActor
