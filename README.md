@@ -4,6 +4,8 @@ TourKit is a Swift Package that provides a SwiftUI slideshow view for feature wa
 
 ## Demo
 
+<video src="Documentation/tourkit-demo.mp4" controls width="720"></video>
+
 > If the embedded player above doesn't render in your Markdown viewer, you can watch the demo directly here: `[Documentation/Videos/tourkit-demo.mp4](Documentation/Videos/tourkit-demo.mp4)`.
 
 ## Package Platform Support
@@ -169,21 +171,25 @@ swift run TourKitSampleApp
 
 Apps shipping with TourKit. Click an icon to visit the app.
 
-
-|                                              |                                              |                                            |                                        |
-| -------------------------------------------- | -------------------------------------------- | ------------------------------------------ | -------------------------------------- |
-| **[Presentify](https://presentifyapp.com/)** | **[FaceScreen](https://facescreenapp.com/)** | **[KeyScreen](https://keyscreenapp.com/)** | **[ToDoBar](https://todobarapp.com/)** |
-
+<p>
+  <a href="https://presentifyapp.com/"><img src="Documentation/Images/WOF/presentify.png" alt="Presentify" width="64" height="64" /></a>
+  &nbsp;
+  <a href="https://facescreenapp.com/"><img src="Documentation/Images/WOF/facescreen.png" alt="FaceScreen" width="64" height="64" /></a>
+  &nbsp;
+  <a href="https://keyscreenapp.com/"><img src="Documentation/Images/WOF/keyscreen.png" alt="KeyScreen" width="64" height="64" /></a>
+  &nbsp;
+  <a href="https://todobarapp.com/"><img src="Documentation/Images/WOF/todobar.png" alt="ToDoBar" width="64" height="64" /></a>
+</p>
 
 ### Add Your App
 
 Shipping an app that uses TourKit? We'd love to feature it. Open a pull request with:
 
 1. **Icon file.** Add your app icon to `Documentation/Images/WOF/` following the existing format:
-  - File name: lowercase app name, e.g. `myapp.png`.
-  - Format: `.png` with a transparent background.
-  - Recommended source size: **512×512** (or any square size ≥ 128×128).
-2. **README entry.** Add a new `<td>` cell to the Wall of Fame table above, using the same structure as the existing entries. Link the icon to your app's website or App Store page.
+   - File name: lowercase app name, e.g. `myapp.png`.
+   - Format: `.png` with a transparent background.
+   - Recommended source size: **512×512** (or any square size ≥ 128×128).
+2. **README entry.** Add a new `<a><img></a>` pair to the Wall of Fame list above, matching the existing entries. Link the icon to your app's website or App Store page.
 3. **PR description.** Briefly describe the app and how it uses TourKit.
 
 ## License
