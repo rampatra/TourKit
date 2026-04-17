@@ -4,9 +4,9 @@ TourKit is a Swift Package that provides a SwiftUI slideshow view for feature wa
 
 ## Demo
 
-<video src="Documentation/tourkit-demo.mp4" controls width="720"></video>
+https://github.com/user-attachments/assets/6a2379e7-d0ce-40a6-bae0-37b4d9573917
 
-> If the embedded player above doesn't render in your Markdown viewer, you can watch the demo directly here: `[Documentation/Videos/tourkit-demo.mp4](Documentation/Videos/tourkit-demo.mp4)`.
+> A copy of the raw file also lives at [`Documentation/Videos/tourkit-demo.mp4`](Documentation/Videos/tourkit-demo.mp4).
 
 ## Package Platform Support
 
@@ -169,7 +169,7 @@ swift run TourKitSampleApp
 
 ## Wall of Fame
 
-Apps shipping with TourKit. Click an icon to visit the app.
+Apps using TourKit. Click an icon to visit the app.
 
 <p>
   <a href="https://presentifyapp.com/"><img src="Documentation/Images/WOF/presentify.png" alt="Presentify" width="64" height="64" /></a>
@@ -190,7 +190,7 @@ Shipping an app that uses TourKit? We'd love to feature it. Open a pull request 
    - Format: `.png` with a transparent background.
    - Recommended source size: **512×512** (or any square size ≥ 128×128).
 2. **README entry.** Add a new `<a><img></a>` pair to the Wall of Fame list above, matching the existing entries. Link the icon to your app's website or App Store page.
-3. **PR description.** Briefly describe the app and how it uses TourKit.
+3. **PR description.** Briefly describe your app, how it uses TourKit, and attach a screenshot of TourKit running inside it.
 
 ## License
 
