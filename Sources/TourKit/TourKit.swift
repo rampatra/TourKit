@@ -127,14 +127,21 @@ public struct TourSlideshowView: View {
                     LinearGradient(
                         stops: [
                             .init(color: .clear, location: 0),
-                            .init(color: Color(white: 0.10).opacity(0.5), location: 0.55),
+                            .init(color: Color(white: 0.10).opacity(0.15), location: 0.25),
+                            .init(color: Color(white: 0.10).opacity(0.45), location: 0.50),
+                            .init(color: Color(white: 0.10).opacity(0.80), location: 0.75),
                             .init(color: Color(white: 0.10), location: 1.0)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    .frame(height: 140)
+                    .frame(height: 220)
                     .allowsHitTesting(false)
+                }
+                .overlay(alignment: .bottom) {
+                    PageIndicator(totalPages: pages.count, currentIndex: currentIndex)
+                        .padding(.bottom, 14)
+                        .allowsHitTesting(false)
                 }
 
             topControls
@@ -147,9 +154,6 @@ public struct TourSlideshowView: View {
         let currentPage = pages[currentIndex]
 
         return VStack(spacing: 12) {
-            PageIndicator(totalPages: pages.count, currentIndex: currentIndex)
-                .padding(.bottom, 4)
-
             Text(currentPage.title, tableName: currentPage.tableName, bundle: currentPage.resolvedStringsBundle)
                 .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
