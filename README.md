@@ -8,10 +8,24 @@ https://github.com/user-attachments/assets/6a2379e7-d0ce-40a6-bae0-37b4d9573917
 
 > A copy of the raw file also lives at [`Documentation/Videos/tourkit-demo.mp4`](Documentation/Videos/tourkit-demo.mp4).
 
+## Features
+
+- **Drop-in SwiftUI view.** Embed `TourSlideshowView` inside any sheet, window, or custom layout you already manage.
+- **Ready-to-use floating window on macOS.** `TourKitWindowController` presents a borderless, draggable, card-sized window — perfect for onboarding on app launch.
+- **Polished dark UI.** Gradient blending between artwork and the text panel, animated page indicator, and subtle glass-style icon buttons (with liquid-glass material on newer OS versions).
+- **Fully localizable text.** `title`, `description`, and button labels are `LocalizedStringKey`s, with optional per-page `tableName` and `stringsBundle` overrides for custom `.strings` / `.xcstrings` tables.
+- **Flexible image loading.** Load images from your asset catalog, a specific module bundle (e.g. `.module`), or on-disk resource files (`png`, `jpg`, `heic`, `tiff`, `gif`, `webp`, …).
+- **Smooth transitions.** Animated page changes and a keyboard shortcut (`Return`) on the primary action.
+- **Zero dependencies.** Pure SwiftUI + AppKit.
+
+### Coming Soon
+
+- **iOS support.** Full feature parity with the macOS experience, including a UIKit-friendly presenter.
+- **Richer slide content.** Go beyond a title and description — custom SwiftUI views, videos, and interactive elements per slide.
+
 ## Package Platform Support
 
 - macOS 13+
-- iOS 16+
 
 ## Installation
 
