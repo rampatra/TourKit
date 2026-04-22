@@ -30,7 +30,7 @@ https://github.com/user-attachments/assets/6a2379e7-d0ce-40a6-bae0-37b4d9573917
 Add TourKit as a Swift Package dependency in Xcode, or in your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/your-org/TourKit.git", from: "1.0.0")
+.package(url: "https://github.com/rampatra/TourKit.git", from: "1.0.0")
 ```
 
 Then add `"TourKit"` to your target's dependencies.
