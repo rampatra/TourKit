@@ -54,6 +54,10 @@ public struct TourPage: Identifiable, Hashable, @unchecked Sendable {
 
 public struct TourSlideshowView: View {
     let pages: [TourPage]
+    /// Fixed content width of the slideshow card. The image region's height
+    /// is `width / imageAspectRatio` and is locked once at init time, so
+    /// every slide renders its artwork at exactly the same absolute size.
+    let width: CGFloat
     let continueButtonTitle: LocalizedStringKey
     let finishButtonTitle: LocalizedStringKey
     let buttonTableName: String?
@@ -65,6 +69,7 @@ public struct TourSlideshowView: View {
 
     public init(
         pages: [TourPage],
+        width: CGFloat = 660,
         initialPageIndex: Int = 0,
         continueButtonTitle: LocalizedStringKey = "Continue",
         finishButtonTitle: LocalizedStringKey = "Done",
@@ -74,6 +79,7 @@ public struct TourSlideshowView: View {
         onClose: (() -> Void)? = nil
     ) {
         self.pages = pages
+        self.width = width
         self.continueButtonTitle = continueButtonTitle
         self.finishButtonTitle = finishButtonTitle
         self.buttonTableName = buttonTableName
@@ -81,6 +87,12 @@ public struct TourSlideshowView: View {
         self.onFinish = onFinish
         self.onClose = onClose
         _currentIndex = State(initialValue: Self.clamped(initialPageIndex, pageCount: pages.count))
+    }
+
+    /// Absolute pixel height of the image region, rounded to whole points
+    /// so the artwork's edges never anti-alias against the card background.
+    var imageHeight: CGFloat {
+        (width / Self.imageAspectRatio).rounded()
     }
 
     public var body: some View {
@@ -94,12 +106,16 @@ public struct TourSlideshowView: View {
                 }
                 .background(Color(white: 0.10))
                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay(
+                .overlay {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-                )
+                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                }
             }
         }
+        .frame(width: width)
+        // Purely visual animation: drives the slide cross-fade and the
+        // page-indicator's active-dot slide. Layout size never changes
+        // because the hosting window is locked to the tallest slide.
         .animation(.easeInOut(duration: 0.25), value: currentIndex)
     }
 
@@ -117,35 +133,50 @@ public struct TourSlideshowView: View {
 
     // MARK: - Image section (top ~55%)
 
+    /// Recommended tour artwork aspect ratio (width : height).
+    ///
+    /// `imageHeight = width / imageAspectRatio` is locked at init time so
+    /// the image is rendered at a stable absolute size on every slide.
+    static let imageAspectRatio: CGFloat = 16.0 / 10.0
+
     private var imageSection: some View {
+        // Only the artwork participates in the cross-fade. The gradient
+        // and page indicator are siblings of the transitioning image in
+        // this ZStack so they stay at full opacity across slide changes;
+        // if they were `.overlay`s on the image they'd be part of its
+        // `.id + .transition(.opacity)` subtree and visibly fade out and
+        // back in at the transition's midpoint.
         ZStack(alignment: .top) {
             image(for: pages[currentIndex])
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .bottom) {
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: Color(white: 0.10).opacity(0.15), location: 0.25),
-                            .init(color: Color(white: 0.10).opacity(0.45), location: 0.50),
-                            .init(color: Color(white: 0.10).opacity(0.80), location: 0.75),
-                            .init(color: Color(white: 0.10), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 220)
-                    .allowsHitTesting(false)
-                }
-                .overlay(alignment: .bottom) {
-                    PageIndicator(totalPages: pages.count, currentIndex: currentIndex)
-                        .padding(.bottom, 14)
-                        .allowsHitTesting(false)
-                }
+                .frame(width: width, height: imageHeight)
+                .id(currentIndex)
+                .transition(.opacity)
+
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: Color(white: 0.10).opacity(0.15), location: 0.25),
+                    .init(color: Color(white: 0.10).opacity(0.45), location: 0.50),
+                    .init(color: Color(white: 0.10).opacity(0.80), location: 0.75),
+                    .init(color: Color(white: 0.10), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 220)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .allowsHitTesting(false)
+
+            PageIndicator(totalPages: pages.count, currentIndex: currentIndex)
+                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .allowsHitTesting(false)
 
             topControls
         }
+        .frame(width: width, height: imageHeight)
     }
 
     // MARK: - Bottom panel (dark area with text + button)
@@ -153,11 +184,18 @@ public struct TourSlideshowView: View {
     private var bottomPanel: some View {
         let currentPage = pages[currentIndex]
 
-        return VStack(spacing: 12) {
+        return VStack(spacing: 0) {
             Text(currentPage.title, tableName: currentPage.tableName, bundle: currentPage.resolvedStringsBundle)
                 .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Flexible gaps around the description so the title pins to the
+            // top of the panel, the button pins to the bottom, and the
+            // description centres vertically in whatever space is left
+            // (which varies per slide since the card height is fixed).
+            Spacer(minLength: 12)
 
             Text(currentPage.description, tableName: currentPage.tableName, bundle: currentPage.resolvedStringsBundle)
                 .font(.body)
@@ -165,12 +203,18 @@ public struct TourSlideshowView: View {
                 .foregroundStyle(Color.white.opacity(0.70))
                 .fixedSize(horizontal: false, vertical: true)
 
+            Spacer(minLength: 12)
+
             primaryActionButton
-                .padding(.top, 6)
         }
         .padding(.horizontal, 32)
-        .padding(.top, 6)
+        .padding(.top, 12)
         .padding(.bottom, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Per-slide identity so title, description, and button cross-fade
+        // as one unit alongside the image above.
+        .id(currentIndex)
+        .transition(.opacity)
     }
 
     // MARK: - Top controls (back / close overlaying the image)
@@ -276,7 +320,9 @@ public struct TourSlideshowView: View {
     }
 
     func goBack() {
-        currentIndex = max(0, currentIndex - 1)
+        let newIndex = max(0, currentIndex - 1)
+        guard newIndex != currentIndex else { return }
+        currentIndex = newIndex
     }
 
     private func image(for page: TourPage) -> Image {
@@ -395,8 +441,25 @@ public final class TourKitWindowController {
             self?.close()
         }
 
+        // Lock the window to the tallest slide's natural content height so
+        // every slide renders in the same card size: the absolute image
+        // region up top, and a bottom panel whose title, description, and
+        // button pin to the top, centre, and bottom of the remaining space
+        // respectively. Shorter slides simply get more breathing room.
+        let imageHeight = width / TourSlideshowView.imageAspectRatio
+        let maxPanelHeight = Self.maxBottomPanelHeight(
+            pages: pages,
+            width: width,
+            continueButtonTitle: continueButtonTitle,
+            finishButtonTitle: finishButtonTitle,
+            buttonTableName: buttonTableName,
+            buttonBundle: buttonBundle
+        )
+        let totalHeight = max(imageHeight + maxPanelHeight, 1)
+
         let rootView = TourSlideshowView(
             pages: pages,
+            width: width,
             continueButtonTitle: continueButtonTitle,
             finishButtonTitle: finishButtonTitle,
             buttonTableName: buttonTableName,
@@ -414,17 +477,9 @@ public final class TourKitWindowController {
                 dismiss()
             }
         )
-        .frame(width: width)
 
+        let contentSize = CGSize(width: width, height: totalHeight)
         let hosting = NSHostingView(rootView: rootView)
-        if #available(macOS 13.0, *) {
-            hosting.sizingOptions = [.intrinsicContentSize]
-        }
-        hosting.layoutSubtreeIfNeeded()
-        let contentSize = CGSize(
-            width: width,
-            height: max(hosting.fittingSize.height, 1)
-        )
         hosting.frame = NSRect(origin: .zero, size: contentSize)
 
         let window = HostWindow(
@@ -457,6 +512,39 @@ public final class TourKitWindowController {
         return window
     }
 
+    /// Returns the tallest bottom-panel natural height across all pages.
+    ///
+    /// The slideshow window is locked to `imageHeight + maxPanelHeight` so
+    /// every slide renders inside the same card footprint: shorter slides
+    /// simply get more vertical breathing room between their title,
+    /// description, and button (which pin to top, centre, and bottom of the
+    /// panel respectively).
+    private static func maxBottomPanelHeight(
+        pages: [TourPage],
+        width: CGFloat,
+        continueButtonTitle: LocalizedStringKey,
+        finishButtonTitle: LocalizedStringKey,
+        buttonTableName: String?,
+        buttonBundle: Bundle?
+    ) -> CGFloat {
+        guard !pages.isEmpty else { return 0 }
+
+        return pages.enumerated().map { index, page in
+            let isLast = (index == pages.count - 1)
+            let sizingView = TourBottomPanelSizingView(
+                page: page,
+                buttonTitle: isLast ? finishButtonTitle : continueButtonTitle,
+                buttonTableName: buttonTableName,
+                buttonBundle: buttonBundle
+            )
+            .frame(width: width)
+
+            let hosting = NSHostingView(rootView: sizingView)
+            hosting.layoutSubtreeIfNeeded()
+            return hosting.fittingSize.height
+        }.max() ?? 0
+    }
+
     /// Closes the tour window if it is currently presented.
     public func close() {
         window?.close()
@@ -468,6 +556,41 @@ public final class TourKitWindowController {
         let onClose: () -> Void
         init(onClose: @escaping () -> Void) { self.onClose = onClose }
         func windowWillClose(_ notification: Notification) { onClose() }
+    }
+}
+
+/// A layout-equivalent stand-in for `TourSlideshowView`'s bottom panel used
+/// purely to pre-measure its intrinsic height. Mirrors the real panel's
+/// modifier chain so `NSHostingView.fittingSize` matches what the actual
+/// slideshow will render at runtime.
+private struct TourBottomPanelSizingView: View {
+    let page: TourPage
+    let buttonTitle: LocalizedStringKey
+    let buttonTableName: String?
+    let buttonBundle: Bundle?
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(page.title, tableName: page.tableName, bundle: page.resolvedStringsBundle)
+                .font(.system(size: 28, weight: .bold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(page.description, tableName: page.tableName, bundle: page.resolvedStringsBundle)
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color.white.opacity(0.70))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(buttonTitle, tableName: buttonTableName, bundle: buttonBundle)
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 220, height: 42)
+                .padding(.top, 6)
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 6)
+        .padding(.bottom, 24)
     }
 }
 
