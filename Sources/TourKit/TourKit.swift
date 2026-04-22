@@ -191,19 +191,14 @@ public struct TourSlideshowView: View {
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Flexible gaps around the description so the title pins to the
-            // top of the panel, the button pins to the bottom, and the
-            // description centres vertically in whatever space is left
-            // (which varies per slide since the card height is fixed).
-            Spacer(minLength: 12)
-
             Text(currentPage.description, tableName: currentPage.tableName, bundle: currentPage.resolvedStringsBundle)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.white.opacity(0.70))
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 6)
 
-            Spacer(minLength: 12)
+            Spacer(minLength: 24)
 
             primaryActionButton
         }
@@ -570,7 +565,7 @@ private struct TourBottomPanelSizingView: View {
     let buttonBundle: Bundle?
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 6) {
             Text(page.title, tableName: page.tableName, bundle: page.resolvedStringsBundle)
                 .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
@@ -582,11 +577,12 @@ private struct TourBottomPanelSizingView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.white.opacity(0.70))
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 6)
 
             Text(buttonTitle, tableName: buttonTableName, bundle: buttonBundle)
                 .font(.system(size: 15, weight: .semibold))
                 .frame(width: 220, height: 42)
-                .padding(.top, 6)
+                .padding(.top, 18)
         }
         .padding(.horizontal, 32)
         .padding(.top, 6)
