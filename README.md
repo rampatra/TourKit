@@ -4,7 +4,7 @@ TourKit is a Swift Package that provides a SwiftUI slideshow view for feature wa
 
 ## Demo
 
-https://github.com/user-attachments/assets/6a2379e7-d0ce-40a6-bae0-37b4d9573917
+https://github.com/user-attachments/assets/7293df3e-7618-4872-be82-15540f4d646f
 
 ## Features
 
